@@ -1,0 +1,9 @@
+{
+  "name": "cortex-playbook-builder",
+  "displayName": "Cortex Playbook Builder",
+  "version": "0.1.0",
+  "description": "Build, modify, validate and review Cortex XSOAR 6, XSOAR 8 and XSIAM playbooks as uploadable YAML - triage, IOC enrichment, XQL pivots, analyst approvals, response actions - with a generator and a calibrated validator.",
+  "author": { "name": "Reli" },
+  "license": "MIT",
+  "keywords": ["cortex", "xsoar", "xsiam", "soar", "playbook", "palo-alto-networks", "security", "soc"]
+}
