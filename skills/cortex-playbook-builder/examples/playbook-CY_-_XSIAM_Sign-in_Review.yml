@@ -1,0 +1,580 @@
+id: CY - XSIAM Sign-in Review
+version: -1
+name: CY - XSIAM Sign-in Review
+description: For the alert user, counts sign-in countries over 30 days with XQL, flags a new country, asks an analyst before any account action, and runs IP triage per IP.
+starttaskid: '0'
+tasks:
+  '0':
+    id: '0'
+    taskid: d576dc1a-142d-4766-94f3-ecdf4a95e2cc
+    type: start
+    task:
+      id: d576dc1a-142d-4766-94f3-ecdf4a95e2cc
+      version: -1
+      name: ''
+      description: ''
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 50
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    nexttasks:
+      '#none#':
+      - '1'
+  '1':
+    id: '1'
+    taskid: 6e05f009-c7a7-462c-a29a-6eb0aa5162b9
+    type: condition
+    task:
+      id: 6e05f009-c7a7-462c-a29a-6eb0aa5162b9
+      version: -1
+      name: Alert has a user
+      description: ''
+      type: condition
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 240
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    conditions:
+    - label: 'yes'
+      condition:
+      - - operator: isNotEmpty
+          left:
+            value:
+              complex:
+                root: inputs.Username
+            iscontext: true
+    nexttasks:
+      'yes':
+      - '3'
+      '#default#':
+      - '2'
+  '2':
+    id: '2'
+    taskid: ba3b6090-84c2-49d1-9be9-8151c738b2c5
+    type: regular
+    task:
+      id: ba3b6090-84c2-49d1-9be9-8151c738b2c5
+      version: -1
+      name: Note no user
+      description: ''
+      scriptName: SetAndHandleEmpty
+      type: regular
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 240.0,
+          "y": 620
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    scriptarguments:
+      key:
+        simple: SignIn.Status
+      value:
+        simple: NO_USER
+    nexttasks:
+      '#none#':
+      - '12'
+  '3':
+    id: '3'
+    taskid: 3ba5dd9f-5296-4176-9d5f-97fbf7bcd886
+    type: regular
+    task:
+      id: 3ba5dd9f-5296-4176-9d5f-97fbf7bcd886
+      version: -1
+      name: XQL sign-in countries for user
+      description: 'Polling command: waits for the XQL result. One query per alert (quota).'
+      script: '|||xdr-xql-generic-query'
+      iscommand: true
+      brand: ''
+      type: regular
+    separatecontext: false
+    continueonerrortype: errorPath
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 430
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    scriptarguments:
+      query_name:
+        simple: cy_signin_countries_${alert.id}
+      time_frame:
+        simple: ${inputs.Days} days
+      query:
+        simple: dataset = authentication_story | alter u = lowercase(json_extract_scalar(auth_normalized_user, "$.username")) | filter u != null and lowercase("${inputs.Username}") contains u | comp count() as logins by action_country | sort desc logins | limit 50
+    continueonerror: true
+    nexttasks:
+      '#error#':
+      - '2'
+      '#none#':
+      - '4'
+  '4':
+    id: '4'
+    taskid: 83b4c86f-8967-4436-b190-3843fc288708
+    type: condition
+    task:
+      id: 83b4c86f-8967-4436-b190-3843fc288708
+      version: -1
+      name: Alert country seen before
+      description: ''
+      type: condition
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 660.0,
+          "y": 620
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    conditions:
+    - label: seen
+      condition:
+      - - operator: inList
+          left:
+            value:
+              complex:
+                root: alert.country
+            iscontext: true
+          right:
+            value:
+              complex:
+                root: PaloAltoNetworksXQL.GenericQuery.results.action_country
+            iscontext: true
+    nexttasks:
+      seen:
+      - '6'
+      '#default#':
+      - '5'
+  '5':
+    id: '5'
+    taskid: 8ddbf800-49da-4542-a4ae-9882d47c640d
+    type: regular
+    task:
+      id: 8ddbf800-49da-4542-a4ae-9882d47c640d
+      version: -1
+      name: Mark new country
+      description: ''
+      scriptName: SetAndHandleEmpty
+      type: regular
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 240.0,
+          "y": 810
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    scriptarguments:
+      key:
+        simple: SignIn.NewCountry
+      value:
+        simple: 'true'
+    nexttasks:
+      '#none#':
+      - '7'
+  '6':
+    id: '6'
+    taskid: e509093c-641c-4394-8637-69e02f5a63c6
+    type: regular
+    task:
+      id: e509093c-641c-4394-8637-69e02f5a63c6
+      version: -1
+      name: Mark known country
+      description: ''
+      scriptName: SetAndHandleEmpty
+      type: regular
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 660.0,
+          "y": 810
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    scriptarguments:
+      key:
+        simple: SignIn.NewCountry
+      value:
+        simple: 'false'
+    nexttasks:
+      '#none#':
+      - '12'
+  '7':
+    id: '7'
+    taskid: bc025061-cc1f-4928-ae01-a150f0ace9ee
+    type: playbook
+    task:
+      id: bc025061-cc1f-4928-ae01-a150f0ace9ee
+      version: -1
+      name: IP triage per IP
+      description: ''
+      playbookName: CY - IP Reputation Triage
+      playbookId: CY - IP Reputation Triage
+      type: playbook
+      iscommand: false
+      brand: ''
+    separatecontext: true
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 1000
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: true
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    scriptarguments:
+      IP:
+        complex:
+          root: alert.remoteip
+      AutoClose:
+        simple: 'false'
+    loop:
+      iscommand: false
+      exitCondition: ''
+      wait: 1
+      max: 20
+      forEach: true
+    nexttasks:
+      '#none#':
+      - '8'
+  '8':
+    id: '8'
+    taskid: d6ba4a96-0db9-4bd3-80df-c6218a78e3cd
+    type: collection
+    task:
+      id: d6ba4a96-0db9-4bd3-80df-c6218a78e3cd
+      version: -1
+      name: Analyst decision
+      description: ''
+      type: collection
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 1190
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    message:
+      to:
+        simple: Investigator
+      subject:
+        simple: New sign-in country for ${inputs.Username}
+      body:
+        simple: ''
+      methods: []
+      format: ''
+      bcc: null
+      cc: null
+      timings:
+        retriescount: 2
+        retriesinterval: 360
+        completeafterreplies: 1
+        completeafterv2: true
+        completeaftersla: false
+    form:
+      questions:
+      - id: '0'
+        label: ''
+        labelarg:
+          simple: Action
+        required: true
+        gridcolumns: []
+        defaultrows: []
+        type: singleSelect
+        options: []
+        optionsarg:
+        - simple: Disable account
+        - simple: Reset sessions
+        - simple: No action
+        fieldassociated: ''
+        placeholder: ''
+        tooltip: ''
+        readonly: false
+      title: New sign-in country for ${inputs.Username}
+      description: ''
+      sender: ''
+      expired: false
+      totalanswers: 0
+    nexttasks:
+      '#none#':
+      - '9'
+  '9':
+    id: '9'
+    taskid: 70a3a79d-057a-436c-b3f8-aead36aec7d3
+    type: condition
+    task:
+      id: 70a3a79d-057a-436c-b3f8-aead36aec7d3
+      version: -1
+      name: Which action
+      description: ''
+      type: condition
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 1380
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    conditions:
+    - label: disable
+      condition:
+      - - operator: isEqualString
+          left:
+            value:
+              complex:
+                root: Analyst decision.Answers.0
+            iscontext: true
+          right:
+            value:
+              simple: Disable account
+    - label: sessions
+      condition:
+      - - operator: isEqualString
+          left:
+            value:
+              complex:
+                root: Analyst decision.Answers.0
+            iscontext: true
+          right:
+            value:
+              simple: Reset sessions
+    nexttasks:
+      disable:
+      - '10'
+      sessions:
+      - '11'
+      '#default#':
+      - '12'
+  '10':
+    id: '10'
+    taskid: 840f6ce1-edd6-4f08-b606-9bdfed158f4e
+    type: regular
+    task:
+      id: 840f6ce1-edd6-4f08-b606-9bdfed158f4e
+      version: -1
+      name: Disable the account
+      description: 'Response action left manual on purpose: wire the client''s IdP command here (e.g. |||msgraph-user-account-disable) once confirmed.'
+      type: regular
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 240.0,
+          "y": 1570
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    nexttasks:
+      '#none#':
+      - '12'
+  '11':
+    id: '11'
+    taskid: a4e4c465-61da-4733-a25e-094307c4aa26
+    type: regular
+    task:
+      id: a4e4c465-61da-4733-a25e-094307c4aa26
+      version: -1
+      name: Revoke sessions
+      description: Wire |||msgraph-user-session-revoke (or the client's IdP) here.
+      type: regular
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 660.0,
+          "y": 1570
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    nexttasks:
+      '#none#':
+      - '12'
+  '12':
+    id: '12'
+    taskid: a1c143ab-cc68-44a5-b36a-36078abdfdd3
+    type: title
+    task:
+      id: a1c143ab-cc68-44a5-b36a-36078abdfdd3
+      version: -1
+      name: Done
+      description: ''
+      type: title
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 1760
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 2000,
+        "width": 840,
+        "x": 30.0,
+        "y": 50
+      }
+    }
+  }
+inputs:
+- key: Username
+  value:
+    complex:
+      root: alert.username
+      transformers:
+      - operator: FirstArrayElement
+  required: false
+  description: Alert user. alert.username is a list on XSIAM - first element.
+  playbookInputQuery: null
+- key: Days
+  value:
+    simple: '30'
+  required: false
+  description: History window in days.
+  playbookInputQuery: null
+outputs:
+- contextPath: SignIn.NewCountry
+  description: true when the alert country was not seen in the window
+  type: unknown
+tests:
+- No tests
+fromversion: 6.10.0
+marketplaces:
+- marketplacev2
