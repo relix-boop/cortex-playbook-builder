@@ -1,0 +1,748 @@
+id: CY - IP Reputation Triage
+version: -1
+name: CY - IP Reputation Triage
+description: Drops private/empty IPs, enriches the rest with every enabled reputation integration, gives each IP a verdict with its reasons, and optionally closes the incident/alert when nothing is suspicious. Verdict-only by default.
+starttaskid: '0'
+tasks:
+  '0':
+    id: '0'
+    taskid: a26b7ece-dbfb-4e8e-becd-b4635e287256
+    type: start
+    task:
+      id: a26b7ece-dbfb-4e8e-becd-b4635e287256
+      version: -1
+      name: ''
+      description: ''
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 50
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    nexttasks:
+      '#none#':
+      - '1'
+  '1':
+    id: '1'
+    taskid: 56358f02-7959-4955-836d-ab0cec42529d
+    type: title
+    task:
+      id: 56358f02-7959-4955-836d-ab0cec42529d
+      version: -1
+      name: Collect
+      description: ''
+      type: title
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 240
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    nexttasks:
+      '#none#':
+      - '2'
+  '2':
+    id: '2'
+    taskid: 1d0c080d-b1ff-47de-b736-b982dec62a29
+    type: regular
+    task:
+      id: 1d0c080d-b1ff-47de-b736-b982dec62a29
+      version: -1
+      name: Keep public IPs only
+      description: ''
+      scriptName: SetAndHandleEmpty
+      type: regular
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 430
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    scriptarguments:
+      key:
+        simple: Triage.IPs
+      value:
+        complex:
+          root: inputs.IP
+          filters:
+          - - operator: IsNotInCidrRanges
+              left:
+                value:
+                  complex:
+                    root: inputs.IP
+                iscontext: true
+              right:
+                value:
+                  complex:
+                    root: inputs.InternalRanges
+                iscontext: true
+          - - operator: isNotEmpty
+              left:
+                value:
+                  complex:
+                    root: inputs.IP
+                iscontext: true
+          transformers:
+          - operator: uniq
+    nexttasks:
+      '#none#':
+      - '3'
+  '3':
+    id: '3'
+    taskid: 7856dbf7-fcb2-4a3f-a891-28d26501be66
+    type: condition
+    task:
+      id: 7856dbf7-fcb2-4a3f-a891-28d26501be66
+      version: -1
+      name: Any public IP to check
+      description: ''
+      type: condition
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 620
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    conditions:
+    - label: 'yes'
+      condition:
+      - - operator: isNotEmpty
+          left:
+            value:
+              complex:
+                root: Triage.IPs
+            iscontext: true
+    nexttasks:
+      'yes':
+      - '5'
+      '#default#':
+      - '4'
+  '4':
+    id: '4'
+    taskid: 9be9f942-5b17-47a4-8bf6-74bed0666bbf
+    type: regular
+    task:
+      id: 9be9f942-5b17-47a4-8bf6-74bed0666bbf
+      version: -1
+      name: Verdict NO_PUBLIC_IP
+      description: ''
+      scriptName: SetAndHandleEmpty
+      type: regular
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 240.0,
+          "y": 810
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    scriptarguments:
+      key:
+        simple: Triage.Verdict
+      value:
+        simple: NO_PUBLIC_IP
+    nexttasks:
+      '#none#':
+      - '12'
+  '5':
+    id: '5'
+    taskid: c45085a8-e97b-4733-90eb-b32d6765f232
+    type: title
+    task:
+      id: c45085a8-e97b-4733-90eb-b32d6765f232
+      version: -1
+      name: Enrich
+      description: ''
+      type: title
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 660.0,
+          "y": 810
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    nexttasks:
+      '#none#':
+      - '6'
+  '6':
+    id: '6'
+    taskid: 9db19c3d-4feb-44eb-b08f-ebd62b760fcf
+    type: regular
+    task:
+      id: 9db19c3d-4feb-44eb-b08f-ebd62b760fcf
+      version: -1
+      name: Get IP reputation
+      description: Runs on every enabled integration that implements !ip.
+      script: '|||ip'
+      iscommand: true
+      brand: ''
+      type: regular
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 1000
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: true
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    scriptarguments:
+      ip:
+        complex:
+          root: Triage.IPs
+    continueonerror: true
+    nexttasks:
+      '#none#':
+      - '7'
+  '7':
+    id: '7'
+    taskid: fa1515f8-8931-47d6-bcbf-dcd3ceff33d7
+    type: title
+    task:
+      id: fa1515f8-8931-47d6-bcbf-dcd3ceff33d7
+      version: -1
+      name: Verdict
+      description: ''
+      type: title
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 1190
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    nexttasks:
+      '#none#':
+      - '8'
+  '8':
+    id: '8'
+    taskid: bdac8fe7-015a-4477-8b9d-95b27866cf18
+    type: condition
+    task:
+      id: bdac8fe7-015a-4477-8b9d-95b27866cf18
+      version: -1
+      name: Highest score among the IPs
+      description: Any IP scoring 3 wins; otherwise any 2. Sources that disagree show in the summary.
+      type: condition
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 1380
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    conditions:
+    - label: malicious
+      condition:
+      - - operator: greaterThanOrEqual
+          left:
+            value:
+              complex:
+                root: DBotScore
+                filters:
+                - - operator: inList
+                    left:
+                      value:
+                        complex:
+                          root: DBotScore.Indicator
+                      iscontext: true
+                    right:
+                      value:
+                        complex:
+                          root: Triage.IPs
+                      iscontext: true
+                accessor: Score
+            iscontext: true
+          right:
+            value:
+              simple: '3'
+    - label: suspicious
+      condition:
+      - - operator: isEqualNumber
+          left:
+            value:
+              complex:
+                root: DBotScore
+                filters:
+                - - operator: inList
+                    left:
+                      value:
+                        complex:
+                          root: DBotScore.Indicator
+                      iscontext: true
+                    right:
+                      value:
+                        complex:
+                          root: Triage.IPs
+                      iscontext: true
+                accessor: Score
+            iscontext: true
+          right:
+            value:
+              simple: '2'
+    nexttasks:
+      malicious:
+      - '9'
+      suspicious:
+      - '10'
+      '#default#':
+      - '11'
+  '9':
+    id: '9'
+    taskid: 0124b167-4eeb-485d-8e82-a047aa5fed4d
+    type: regular
+    task:
+      id: 0124b167-4eeb-485d-8e82-a047aa5fed4d
+      version: -1
+      name: Verdict MALICIOUS
+      description: ''
+      scriptName: SetAndHandleEmpty
+      type: regular
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 30.0,
+          "y": 1570
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    scriptarguments:
+      key:
+        simple: Triage.Verdict
+      value:
+        simple: MALICIOUS
+    nexttasks:
+      '#none#':
+      - '12'
+  '10':
+    id: '10'
+    taskid: d0739e3f-c506-4c5f-8734-5e5548e3f16e
+    type: regular
+    task:
+      id: d0739e3f-c506-4c5f-8734-5e5548e3f16e
+      version: -1
+      name: Verdict SUSPICIOUS
+      description: ''
+      scriptName: SetAndHandleEmpty
+      type: regular
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 1570
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    scriptarguments:
+      key:
+        simple: Triage.Verdict
+      value:
+        simple: SUSPICIOUS
+    nexttasks:
+      '#none#':
+      - '12'
+  '11':
+    id: '11'
+    taskid: 4d603467-524c-4b5d-83a3-b2b555a76192
+    type: regular
+    task:
+      id: 4d603467-524c-4b5d-83a3-b2b555a76192
+      version: -1
+      name: Verdict CLEAN
+      description: ''
+      scriptName: SetAndHandleEmpty
+      type: regular
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 870.0,
+          "y": 1570
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    scriptarguments:
+      key:
+        simple: Triage.Verdict
+      value:
+        simple: CLEAN
+    nexttasks:
+      '#none#':
+      - '12'
+  '12':
+    id: '12'
+    taskid: ddc2f0c3-b811-4855-b99f-e5a2fb26ef2f
+    type: regular
+    task:
+      id: ddc2f0c3-b811-4855-b99f-e5a2fb26ef2f
+      version: -1
+      name: Write verdict summary
+      description: Readable War Room entry; the analyst should not need raw context.
+      scriptName: Print
+      type: regular
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 1760
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    scriptarguments:
+      value:
+        simple: |-
+          ### IP triage: ${Triage.Verdict}
+          Checked: ${Triage.IPs}
+
+          Per-source scores (indicator / vendor / score):
+          ${DBotScore}
+    nexttasks:
+      '#none#':
+      - '13'
+  '13':
+    id: '13'
+    taskid: 6f52cf90-9d80-460f-963e-643357837853
+    type: title
+    task:
+      id: 6f52cf90-9d80-460f-963e-643357837853
+      version: -1
+      name: Close or hand over
+      description: ''
+      type: title
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 1950
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    nexttasks:
+      '#none#':
+      - '14'
+  '14':
+    id: '14'
+    taskid: 9f3dc73f-c692-4aaf-b02f-59b14726ddd9
+    type: condition
+    task:
+      id: 9f3dc73f-c692-4aaf-b02f-59b14726ddd9
+      version: -1
+      name: Auto-close allowed
+      description: 'AND: AutoClose=true and verdict is CLEAN or NO_PUBLIC_IP.'
+      type: condition
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 2140
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    conditions:
+    - label: 'yes'
+      condition:
+      - - operator: isEqualString
+          left:
+            value:
+              complex:
+                root: inputs.AutoClose
+            iscontext: true
+          right:
+            value:
+              simple: 'true'
+          ignorecase: true
+      - - operator: isNotEqualString
+          left:
+            value:
+              complex:
+                root: Triage.Verdict
+            iscontext: true
+          right:
+            value:
+              simple: MALICIOUS
+      - - operator: isNotEqualString
+          left:
+            value:
+              complex:
+                root: Triage.Verdict
+            iscontext: true
+          right:
+            value:
+              simple: SUSPICIOUS
+    nexttasks:
+      'yes':
+      - '15'
+      '#default#':
+      - '16'
+  '15':
+    id: '15'
+    taskid: 2561a52c-d55f-4be4-b9f7-f41952e35cbb
+    type: regular
+    task:
+      id: 2561a52c-d55f-4be4-b9f7-f41952e35cbb
+      version: -1
+      name: Close as benign
+      description: ''
+      script: Builtin|||closeInvestigation
+      iscommand: true
+      brand: Builtin
+      type: regular
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 2330
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+    scriptarguments:
+      closeReason:
+        complex:
+          root: inputs.CloseReason
+      closeNotes:
+        simple: 'Auto-closed by CY - IP Reputation Triage: ${Triage.Verdict} (${Triage.IPs})'
+    nexttasks:
+      '#none#':
+      - '16'
+  '16':
+    id: '16'
+    taskid: 359b47e1-3cbd-4761-91ac-4f4409064a5e
+    type: title
+    task:
+      id: 359b47e1-3cbd-4761-91ac-4f4409064a5e
+      version: -1
+      name: Done
+      description: ''
+      type: title
+      iscommand: false
+      brand: ''
+    separatecontext: false
+    continueonerrortype: ''
+    view: |-
+      {
+        "position": {
+          "x": 450.0,
+          "y": 2520
+        }
+      }
+    note: false
+    timertriggers: []
+    ignoreworker: false
+    skipunavailable: false
+    quietmode: 0
+    isoversize: false
+    isautoswitchedtoquietmode: false
+view: |-
+  {
+    "linkLabelsPosition": {},
+    "paper": {
+      "dimensions": {
+        "height": 2760,
+        "width": 1260,
+        "x": -180.0,
+        "y": 50
+      }
+    }
+  }
+inputs:
+- key: IP
+  value: {}
+  required: true
+  description: 'IPs to triage. Map from the parent: incident.* on XSOAR, alert.hostip / alert.remoteip on XSIAM.'
+  playbookInputQuery: null
+- key: InternalRanges
+  value:
+    simple: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8,169.254.0.0/16,100.64.0.0/10
+  required: false
+  description: CIDRs never sent to reputation sources.
+  playbookInputQuery: null
+- key: AutoClose
+  value:
+    simple: 'false'
+  required: false
+  description: true = close when every public IP is benign/unknown.
+  playbookInputQuery: null
+- key: CloseReason
+  value:
+    simple: Resolved
+  required: false
+  description: 'XSOAR: Resolved / False Positive. XSIAM: ''Resolved - False Positive'' etc.'
+  playbookInputQuery: null
+outputs:
+- contextPath: Triage.Verdict
+  description: MALICIOUS | SUSPICIOUS | CLEAN | NO_PUBLIC_IP
+  type: unknown
+- contextPath: Triage.IPs
+  description: Public IPs that were checked
+  type: unknown
+tests:
+- No tests
+fromversion: 6.10.0
+marketplaces:
+- xsoar
+- marketplacev2
