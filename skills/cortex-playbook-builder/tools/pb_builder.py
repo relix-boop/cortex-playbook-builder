@@ -110,7 +110,8 @@ def tf(operator: str, **args) -> dict:
 
 
 class _Dumper(yaml.SafeDumper):
-    pass
+    def ignore_aliases(self, data):  # no &id001 anchors - write every block out in full
+        return True
 
 
 def _str_repr(dumper, data):
