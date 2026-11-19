@@ -1,0 +1,16 @@
+{
+  "name": "cortex-skills",
+  "owner": { "name": "Reli" },
+  "metadata": { "description": "Claude skills for Cortex XSOAR / XSIAM playbook engineering." },
+  "plugins": [
+    {
+      "name": "cortex-playbook-builder",
+      "source": "./",
+      "description": "Build, modify, validate and review Cortex XSOAR 6/8 and XSIAM playbooks as uploadable YAML.",
+      "version": "0.1.0",
+      "author": { "name": "Reli" },
+      "license": "MIT",
+      "category": "security"
+    }
+  ]
+}
